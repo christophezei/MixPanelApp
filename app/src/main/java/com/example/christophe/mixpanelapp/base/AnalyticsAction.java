@@ -11,19 +11,22 @@ import org.json.JSONObject;
 import butterknife.BindView;
 
 
-public class AnalyticsAction implements ActionAnalytics{
-    @BindView(R.id.editTextEmail) EditText email;
+public class AnalyticsAction implements ActionAnalytics {
+    //You were binding a view in an interface
+//
+//    @BindView(R.id.editTextEmail)
+//    EditText email;
+
+
     private Context context;
+
     public AnalyticsAction(Context context) {
-        this.context=context;
-
-
+        this.context = context;
     }
 
     @Override
     public void actionDone() {
         JSONObject props = new JSONObject();
-        MixPanelHelper.getInstance(context).track(Action_Done,props);
-
+        MixPanelHelper.getInstance(context).getMixpanelAPI().track(Action_Done, props);
     }
 }

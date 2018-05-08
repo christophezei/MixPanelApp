@@ -13,6 +13,7 @@ import android.widget.EditText;
 import com.example.christophe.mixpanelapp.R;
 import com.example.christophe.mixpanelapp.base.AnalyticsAction;
 import com.example.christophe.mixpanelapp.base.AnalyticsView;
+import com.example.christophe.mixpanelapp.util.ActionListener;
 import com.example.christophe.mixpanelapp.util.MixPanelHelper;
 
 import butterknife.BindView;
@@ -30,34 +31,30 @@ public class Tab4Fragment extends Fragment {
         this.actionListener = (ActionListener) context;
     }
 
-    public interface ActionListener {
-        void onActionDone();
-
-    }
-
-
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view=inflater.inflate(R.layout.fragment_tab4, container, false);
-        ButterKnife.bind(this,view);
-        AnalyticsView view4=new AnalyticsView(getContext());
+        View view = inflater.inflate(R.layout.fragment_tab4, container, false);
+        ButterKnife.bind(this, view);
+        AnalyticsView view4 = new AnalyticsView(getContext());
         view4.getView4();
         return view;
     }
-    @BindView(R.id.editTextEmail) EditText email;
+
+    @BindView(R.id.editTextEmail)
+    EditText email;
 
 
     @OnClick(R.id.buttonDone)
-    void submit() {
-        this.actionListener.onActionDone();
-        if(email!=null){
-            MixPanelHelper.getInstance(getContext()).alias(email.getText().toString(),"0");
+    public void submit() {
+        this.actionListener.onAction(ActionListener.Action.ACTION_FOUR);
+        if (email != null) {
+            MixPanelHelper.getInstance(getContext()).getMixpanelAPI().alias(email.getText().toString(), "0");
         }
-        MixPanelHelper.getInstance(getContext()).identify(email.getText().toString());
-        AnalyticsAction actionDone=new AnalyticsAction(getContext());
+        MixPanelHelper.getInstance(getContext()).getMixpanelAPI().identify(email.getText().toString());
+        AnalyticsAction actionDone = new AnalyticsAction(getContext());
         actionDone.actionDone();
     }
 
