@@ -1,22 +1,26 @@
 package com.example.christophe.mixpanelapp.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.support.design.widget.TabLayout;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.example.christophe.mixpanelapp.R;
 import com.example.christophe.mixpanelapp.adapter.PageAdapter;
-import com.example.christophe.mixpanelapp.fragment.Tab1Fragment;
-import com.example.christophe.mixpanelapp.fragment.Tab2Fragment;
-import com.example.christophe.mixpanelapp.fragment.Tab3Fragment;
-import com.example.christophe.mixpanelapp.fragment.Tab4Fragment;
+import com.example.christophe.mixpanelapp.service.MyFireBaseMessagingService;
 import com.example.christophe.mixpanelapp.util.ActionListener;
 import com.example.christophe.mixpanelapp.util.MixPanelHelper;
 
@@ -27,8 +31,6 @@ import java.util.UUID;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static com.example.christophe.mixpanelapp.util.ActionListener.Action.ACTION_ONE;
-
 public class MainActivity extends AppCompatActivity implements ActionListener {
 
     @BindView(R.id.toolbar)
@@ -37,6 +39,10 @@ public class MainActivity extends AppCompatActivity implements ActionListener {
     TabLayout tabLayout;
     @BindView(R.id.viewPager)
     ViewPager viewPager;
+
+    private SharedPreferences sharedPreferences;
+    private BroadcastReceiver receiver;
+    private boolean showingOptionsMenu = false;
 
 
     @Override
@@ -47,10 +53,18 @@ public class MainActivity extends AppCompatActivity implements ActionListener {
         ButterKnife.bind(this);
         setSupportActionBar(mtoolbar);
 
+        sharedPreferences = getApplication().getSharedPreferences("Save", MODE_PRIVATE);
+        String token = sharedPreferences.getString("Value", "0");
+        Log.d("Firebase", "token " + token);
+
+
         // Instead of putting big blocks of code in onCreate, we put them in different methods and call them from
         // onCreate, making the code more readable
         this.initViewPager();
         this.initMixPanel();
+        this.initBroadCast();
+
+
     }
 
     private void initViewPager() {
@@ -70,29 +84,35 @@ public class MainActivity extends AppCompatActivity implements ActionListener {
         throw new RuntimeException("This is a crash");
     }
 
+    public void initBroadCast() {
+        IntentFilter filter = new IntentFilter(MyFireBaseMessagingService.KEY_NOTIF);
+        receiver = new BroadcastReceiver() {
 
-    // Previously, you had multiple interfaces in each fragment and you were implementing all interfaces.
-    // Instead what we can do is use one interface and decide what action to take by using a key.
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String value = intent.getExtras().getString("value");
+                Log.e("key", value);
+                switch (value) {
+                    case "1":
+                        viewPager.setCurrentItem(3);
+                        break;
+                    case "3":
+                        throw new RuntimeException();
+                    case "4":
+                        showingOptionsMenu = true;
+                        invalidateOptionsMenu();
+                        break;
+                    default:
+                        break;
 
-//    @Override
-//    public void onActionNext() {
-//        viewPager.setCurrentItem(1);
-//    }
-//
-//    @Override
-//    public void onActionNext2() {
-//        viewPager.setCurrentItem(2);
-//    }
-//
-//    @Override
-//    public void onActionNext3() {
-//        viewPager.setCurrentItem(3);
-//    }
-//
-//    @Override
-//    public void onActionDone() {
-//        Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
-//    }
+                }
+
+
+            }
+        };
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(receiver, filter);
+
+    }
 
     @Override
     public void onAction(Action action) {
@@ -116,9 +136,28 @@ public class MainActivity extends AppCompatActivity implements ActionListener {
     }
 
     @Override
-    protected void onDestroy() {
-        MixPanelHelper.getInstance(this).getMixpanelAPI().flush();
-        super.onDestroy();
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.actionbar_menu, menu);
+        menu.getItem(0).setVisible(showingOptionsMenu);
+        return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                Toast.makeText(this, "Congratulations, you enabled a premium feature !", Toast.LENGTH_SHORT).show();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        MixPanelHelper.getInstance(this).getMixpanelAPI().flush();
+        if (receiver != null) {
+            LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(receiver);
+        }
+        super.onDestroy();
+    }
 }
